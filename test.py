@@ -119,6 +119,8 @@ class TestDatetimeRange(TestCase):
         assert not dt_range.intersect(end_end)
         assert not dt_range.intersect(connects_after)
         assert not dt_range.intersect(begins_after_ends_after)
+        assert dt_range.intersect(
+            begins_during_ends_during) == dt_range & begins_during_ends_during
 
     def test_union(self):
         assert dt_range.union(
@@ -151,6 +153,7 @@ class TestDatetimeRange(TestCase):
             connects_after) == [same_begin_ends_after]
         assert dt_range.union(
             begins_after_ends_after) == [dt_range, begins_after_ends_after]
+        assert dt_range.union(connects_after) == dt_range | connects_after
 
     def test_subtract(self):
         assert dt_range.subtract(begins_before_ends_before) == [dt_range]
@@ -163,6 +166,21 @@ class TestDatetimeRange(TestCase):
             begins_before_ends_after) == []
         assert dt_range.subtract(
             begin_begin) == [dt_range]
-        print(dt_range.subtract(same_begin_ends_during))
         assert dt_range.subtract(
             same_begin_ends_during) == [begins_during_same_end]
+        assert dt_range.subtract(
+            dt_range) == []
+        assert dt_range.subtract(
+            same_begin_ends_after) == []
+        assert dt_range.subtract(
+            begins_during_ends_during) == [DatetimeRange(begin, during1),
+                                           DatetimeRange(during2, end)]
+        assert dt_range.subtract(
+            end_end) == [dt_range]
+        assert dt_range.subtract(
+            connects_after) == [dt_range]
+        assert dt_range.subtract(
+            begins_after_ends_after) == [dt_range]
+        assert dt_range.subtract(
+            begins_during_ends_during) == dt_range - begins_during_ends_during
+

@@ -33,9 +33,15 @@ class DatetimeRange:
         self.begin = begin
         self.end = end
 
+    def __repr__(self):
+        dt_format = '%d/%m/%y %H:%M:%S'
+        return 'begin {begin} - end {end}'.format(
+            begin=self.begin.strftime(dt_format),
+            end=self.end.strftime(dt_format))
+
     def __eq__(self, dt_range):
         return self.begin == dt_range.begin and self.end == dt_range.end
-        
+
     @property
     def length(self):
         return self.end - self.begin
@@ -58,26 +64,34 @@ class DatetimeRange:
                                  min(self.end, dt_range.end))
         return None
 
+    def __and__(self, dt_range):
+        return self.intersect(dt_range)
+
     def union(self, dt_range):
         if self.overlaps(dt_range) or self.connects(dt_range):
             return [DatetimeRange(min(self.begin, dt_range.begin),
                                   max(self.end, dt_range.end))]
         return [self, dt_range]
 
+    def __or__(self, dt_range):
+        return self.union(dt_range)
+
     def subtract(self, dt_range):
-        if dt_range.begin == dt_range.end:
-            return [self]
-        if self.overlaps(dt_range):
-            if self.divides(dt_range):
+        if dt_range.begin <= self.begin:
+            if dt_range.end >= self.begin:
+                if dt_range.end < self.end:
+                    return [DatetimeRange(dt_range.end, self.end)]
                 return []
-            if dt_range.divides(self):
+            return [self]
+        if dt_range.begin < self.end:
+            if dt_range.end < self.end:
                 return [DatetimeRange(self.begin, dt_range.begin),
                         DatetimeRange(dt_range.end, self.end)]
-            if dt_range.begin <= self.begin:
-                return [DatetimeRange(dt_range.end, self.end)]
             return [DatetimeRange(self.begin, dt_range.begin)]
         return [self]
-            
+
+    def __sub__(self, dt_range):
+        return self.subtract(dt_range)
 
 
 class Task(Constrained):
@@ -95,7 +109,6 @@ class Task(Constrained):
             maximum_rate_daily=timedelta(hours=10),
             minimum_rate_daily=timedelta(hours=2)):
 
-        self.set_ranges(datetime_ranges)
         self.name = name
         self.priority = priority
         self.deadline = deadline
@@ -137,7 +150,3 @@ class Event(DatetimeRange):
         self.location = location
         self.description = description
         self.participants = participants
-
-    def __repr__(self):
-        return ('{0.name} - begin {0.begin:%m/%d/%Y %H:%M}, '
-                'end {0.end::%m/%d/%Y %H:%M}').format(self)
